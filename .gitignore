@@ -1,0 +1,35 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.aws/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Local runtime data and logs
+data/
+*.db
+*.sqlite*
+*.log
+.cache/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+playwright-report/
+test-results/
