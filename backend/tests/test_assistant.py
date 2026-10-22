@@ -163,3 +163,130 @@ def test_provider_errors_are_sanitized_and_leave_history_unchanged(settings):
         assert response.status_code == 502
         assert "sensitive provider body" not in response.text
         assert client.get(f"/api/conversations/{cid}").json()["turns"] == []
+
+
+def prepare_draft(client, kind="sale", quantity=2, total="50.00"):
+    cid = client.post("/api/conversations").json()["id"]
+    response = client.post("/api/chat", json={
+        "conversation_id": cid, "message": f"Record a {kind} of {quantity} coffee bags for PEN {total} total.",
+    })
+    assert response.status_code == 200, response.text
+    return cid, response.json()["transactions"][0]
+
+
+def draft_provider(kind="sale", quantity=2, total="50.00"):
+    return ScriptedProvider([
+        call("prepare_transaction", {"sku": "COF-001", "kind": kind, "quantity": quantity, "total": total}),
+        reply("Review the transaction card and click Confirm or Cancel. Nothing has been recorded yet."),
+    ])
+
+
+def test_sale_needs_confirmation_is_idempotent_and_survives_restart(settings, store):
+    with TestClient(create_app(settings, draft_provider())) as client:
+        cid, draft = prepare_draft(client)
+        url = f"/api/conversations/{cid}/transactions/{draft['id']}"
+        assert draft["status"] == "pending" and draft["stock_after"] == 6
+        assert store.inventory("COF-001")[0]["stock"] == 8
+        assert len(store.transactions()) == 12
+        assert client.get(f"/api/conversations/{cid}").json()["turns"][0]["transactions"][0] == draft
+        response = client.post(url, json={"decision": "confirm"})
+        assert response.status_code == 200, response.text
+        receipt = response.json()["turns"][0]["transactions"][0]
+        assert receipt["status"] == "confirmed" and receipt["transaction_id"] is not None
+        assert store.inventory("COF-001")[0]["stock"] == 6
+        assert len(store.transactions()) == 13
+        assert "private reasoning fixture" not in response.text
+        assert client.post(url, json={"decision": "confirm"}).json() == response.json()
+        assert len(store.transactions()) == 13
+        assert client.post(url, json={"decision": "cancel"}).status_code == 409
+        messages = store.conversation(cid)["messages"]
+        assert messages[-1]["role"] == "system" and '"status": "confirmed"' in messages[-1]["content"]
+    with TestClient(create_app(settings, ScriptedProvider([]))) as restarted:
+        assert restarted.get(f"/api/conversations/{cid}").json()["turns"][0]["transactions"][0] == receipt
+        assert store.inventory("COF-001")[0]["stock"] == 6
+
+
+def test_cancel_does_not_write_and_cannot_be_confirmed_later(settings, store):
+    with TestClient(create_app(settings, draft_provider())) as client:
+        cid, draft = prepare_draft(client)
+        url = f"/api/conversations/{cid}/transactions/{draft['id']}"
+        response = client.post(url, json={"decision": "cancel"})
+        assert response.status_code == 200
+        assert response.json()["turns"][0]["transactions"][0]["status"] == "cancelled"
+        assert client.post(url, json={"decision": "cancel"}).json() == response.json()
+        assert client.post(url, json={"decision": "confirm"}).status_code == 409
+        assert store.inventory("COF-001")[0]["stock"] == 8
+        assert len(store.transactions()) == 12
+
+
+def test_purchase_adds_stock_and_keeps_purchase_cost_explicit(settings, store):
+    with TestClient(create_app(settings, draft_provider("purchase", 3, "55.50"))) as client:
+        cid, draft = prepare_draft(client, "purchase", 3, "55.50")
+        response = client.post(f"/api/conversations/{cid}/transactions/{draft['id']}", json={"decision": "confirm"})
+        assert response.status_code == 200
+        assert store.inventory("COF-001")[0]["stock"] == 11
+        latest = store.transactions(sku="COF-001", kind="purchase")[0]
+        assert latest["quantity"] == 3 and latest["total"] == "55.50"
+
+
+def test_stale_draft_cannot_apply_a_different_stock_change(settings, store):
+    provider = ScriptedProvider([
+        call("prepare_transaction", {"sku": "COF-001", "kind": "sale", "quantity": 2, "total": "50"}), reply("Review this draft."),
+        call("prepare_transaction", {"sku": "COF-001", "kind": "sale", "quantity": 5, "total": "125"}), reply("Review this draft."),
+    ])
+    with TestClient(create_app(settings, provider)) as client:
+        cid1, draft1 = prepare_draft(client)
+        cid2, draft2 = prepare_draft(client, quantity=5, total="125")
+        assert client.post(f"/api/conversations/{cid1}/transactions/{draft2['id']}", json={"decision": "confirm"}).status_code == 404
+        assert client.post(f"/api/conversations/{cid1}/transactions/{draft1['id']}", json={"decision": "confirm"}).status_code == 200
+        response = client.post(f"/api/conversations/{cid2}/transactions/{draft2['id']}", json={"decision": "confirm"})
+        assert response.status_code == 409 and "Stock changed" in response.text
+        assert store.inventory("COF-001")[0]["stock"] == 6
+        assert len(store.transactions()) == 13
+        assert store.conversation(cid2)["turns"][0]["transactions"][0]["status"] == "pending"
+
+
+@pytest.mark.parametrize("arguments", [
+    {"sku": "COF-001", "kind": "sale", "quantity": 9, "total": "50"},
+    {"sku": "COF-001", "kind": "sale", "quantity": 0, "total": "50"},
+    {"sku": "COF-001", "kind": "sale", "quantity": 1.5, "total": "50"},
+    {"sku": "COF-001", "kind": "sale", "quantity": 2, "total": "50.001"},
+    {"sku": "COF-001", "kind": "sale", "quantity": 2, "total": "NaN"},
+    {"sku": "COF-001", "kind": "sale", "quantity": 2, "total": "-10"},
+    {"sku": "MISSING", "kind": "purchase", "quantity": 2, "total": "50"},
+])
+def test_invalid_transaction_requests_do_not_change_inventory(settings, store, arguments):
+    provider = ScriptedProvider([call("prepare_transaction", arguments), reply("Please check the transaction details.")])
+    with TestClient(create_app(settings, provider)) as client:
+        cid = client.post("/api/conversations").json()["id"]
+        response = client.post("/api/chat", json={"conversation_id": cid, "message": "Prepare a transaction"})
+        assert response.status_code == 200
+        assert response.json()["transactions"] == []
+        assert response.json()["steps"][0]["status"] == "error"
+        assert store.inventory("COF-001")[0]["stock"] == 8
+        assert len(store.transactions()) == 12
+
+
+def test_failed_agent_run_does_not_leave_a_confirmable_draft(settings, store):
+    provider = ScriptedProvider([
+        call("prepare_transaction", {"sku": "COF-001", "kind": "sale", "quantity": 2, "total": "50"}),
+        *[call("query_inventory", {}) for _ in range(8)],
+    ])
+    with TestClient(create_app(settings, provider)) as client:
+        cid = client.post("/api/conversations").json()["id"]
+        response = client.post("/api/chat", json={"conversation_id": cid, "message": "Record a sale"})
+        assert response.status_code == 422
+        assert store.conversation(cid)["turns"] == []
+        assert store.inventory("COF-001")[0]["stock"] == 8
+
+
+def test_concurrent_confirmation_retries_only_record_once(settings, store):
+    from concurrent.futures import ThreadPoolExecutor
+
+    with TestClient(create_app(settings, draft_provider())) as client:
+        cid, draft = prepare_draft(client)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda _: store.decide_transaction(cid, draft["id"], "confirm"), range(2)))
+    assert results[0] == results[1]
+    assert store.inventory("COF-001")[0]["stock"] == 6
+    assert len(store.transactions()) == 13

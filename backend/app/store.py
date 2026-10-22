@@ -4,9 +4,18 @@ import json
 import re
 import sqlite3
 from contextlib import closing
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
+
+
+class TransactionConflict(ValueError):
+    """A draft can no longer be applied as displayed."""
+
+
+class DraftNotFound(LookupError):
+    pass
 
 
 class Store:
@@ -107,6 +116,22 @@ class Store:
             """, (expression,)).fetchall()
             return [dict(row) for row in rows]
 
+    def prepare_transaction(self, sku: str, kind: str, quantity: int, total: Decimal):
+        """Preview only. Drafts are persisted with a successful assistant turn."""
+        with closing(self.connect()) as db:
+            product = db.execute("SELECT * FROM products WHERE sku = ?", (sku,)).fetchone()
+        if product is None:
+            raise ValueError("Product not found. Look up its exact SKU first.")
+        change = quantity if kind == "purchase" else -quantity
+        after = product["stock"] + change
+        if after < 0:
+            raise ValueError(f"Not enough stock: only {product['stock']} units are available.")
+        return {"id": str(uuid4()), "sku": sku, "product": product["name"],
+                "unit": product["unit"], "currency": product["currency"], "kind": kind,
+                "quantity": quantity, "total": format(total, ".2f"),
+                "stock_before": product["stock"], "stock_after": after,
+                "status": "pending", "transaction_id": None, "recorded_at": None}
+
     def create_conversation(self):
         conversation_id = str(uuid4())
         with closing(self.connect()) as db, db:
@@ -128,3 +153,50 @@ class Store:
             db.execute("UPDATE conversations SET messages = ?, turns = ? WHERE id = ?", (
                 json.dumps(messages), json.dumps(turns), conversation_id,
             ))
+
+    def decide_transaction(self, conversation_id: str, draft_id: str, decision: str):
+        """Apply one explicit UI decision atomically; retries cannot record it twice.
+
+        Drafts live in the existing conversation JSON because this demo has at most
+        30 turns per chat. No separate workflow service or queue is needed.
+        """
+        if decision not in {"confirm", "cancel"}:
+            raise ValueError("Unknown transaction decision")
+        with closing(self.connect()) as db, db:
+            db.execute("BEGIN IMMEDIATE")
+            row = db.execute("SELECT * FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
+            if row is None:
+                raise DraftNotFound("Conversation not found")
+            turns = json.loads(row["turns"])
+            draft = next((draft for turn in turns for draft in turn.get("transactions", [])
+                          if draft["id"] == draft_id), None)
+            if draft is None:
+                raise DraftNotFound("Transaction draft not found in this conversation")
+            status = "confirmed" if decision == "confirm" else "cancelled"
+            if draft["status"] != "pending":
+                if draft["status"] == status:
+                    return {"id": conversation_id, "turns": turns}
+                raise TransactionConflict(f"This draft is already {draft['status']}.")
+            recorded_at = datetime.now(timezone.utc).isoformat()
+            if decision == "confirm":
+                changed = db.execute("""
+                    UPDATE products SET stock = ? WHERE sku = ? AND stock = ? AND ? >= 0
+                """, (draft["stock_after"], draft["sku"], draft["stock_before"],
+                      draft["stock_after"])).rowcount
+                if not changed:
+                    raise TransactionConflict(
+                        "Stock changed since this draft was prepared. Cancel it and ask for a new draft."
+                    )
+                cursor = db.execute("""
+                    INSERT INTO transactions (sku, kind, quantity, total, date) VALUES (?,?,?,?,?)
+                """, (draft["sku"], draft["kind"], draft["quantity"], draft["total"], recorded_at))
+                draft["transaction_id"] = cursor.lastrowid
+            draft.update(status=status, recorded_at=recorded_at)
+            messages = json.loads(row["messages"])
+            # This is a trusted application event, not a model's claim that it wrote data.
+            messages.append({"role": "system", "content": "Application transaction update: " +
+                             json.dumps(draft)})
+            db.execute("UPDATE conversations SET turns = ?, messages = ? WHERE id = ?", (
+                json.dumps(turns), json.dumps(messages), conversation_id,
+            ))
+            return {"id": conversation_id, "turns": turns}

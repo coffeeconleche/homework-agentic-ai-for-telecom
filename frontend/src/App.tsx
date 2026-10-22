@@ -15,16 +15,22 @@ import {
   MessageSquare,
   Package,
   Plus,
+  ReceiptText,
+  Orbit,
   Store,
   Users,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { api, ApiError } from './api'
-import type { Health, Turn } from './api'
+import type { Conversation, Health, Turn } from './api'
 import StockroomIllustration from './StockroomIllustration'
+import TransactionCard from './TransactionCard'
+import StudioWelcome from './StudioWelcome'
 
 const STORAGE_KEY = 'stockai.conversation'
+const APPEARANCE_KEY = 'stockai.appearance'
+type Appearance = 'stockroom' | 'studio'
 const suggestions = [
   {
     icon: Package,
@@ -53,6 +59,7 @@ const toolLabels: Record<string, string> = {
   calculate: 'Ran a calculation',
   ask_policy_agent: 'Consulted Policy researcher',
   search_knowledge: 'Searched knowledge base',
+  prepare_transaction: 'Prepared a transaction for review',
 }
 
 function Activity({ turn }: { turn: Turn }) {
@@ -63,11 +70,13 @@ function Activity({ turn }: { turn: Turn }) {
       <summary>
         <ClipboardList size={13} /> {agents} {agents === 1 ? 'agent' : 'agents'}
         <span>·</span>
-        {turn.steps.length} {turn.steps.length === 1 ? 'tool call' : 'tool calls'}
+        {turn.steps.length}{' '}
+        {turn.steps.length === 1 ? 'tool call' : 'tool calls'}
         {turn.sources.length > 0 && (
           <>
             <span>·</span>
-            {turn.sources.length} {turn.sources.length === 1 ? 'source' : 'sources'}
+            {turn.sources.length}{' '}
+            {turn.sources.length === 1 ? 'source' : 'sources'}
           </>
         )}
         <ChevronRight size={13} className="details-chevron" />
@@ -105,6 +114,15 @@ function Activity({ turn }: { turn: Turn }) {
 }
 
 export default function App() {
+  const [appearance, setAppearance] = useState<Appearance>(() => {
+    try {
+      return localStorage.getItem(APPEARANCE_KEY) === 'studio'
+        ? 'studio'
+        : 'stockroom'
+    } catch {
+      return 'stockroom'
+    }
+  })
   const [health, setHealth] = useState<Health | null>(null)
   const [conversation, setConversation] = useState<string | null>(null)
   const [turns, setTurns] = useState<Turn[]>([])
@@ -112,10 +130,24 @@ export default function App() {
   const [pending, setPending] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [initializing, setInitializing] = useState(true)
+  const [decisionPending, setDecisionPending] = useState<string | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const chatRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const sendingRef = useRef(false)
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(APPEARANCE_KEY, appearance)
+    } catch {
+      /* Preference remains usable when storage is unavailable. */
+    }
+    document.title =
+      appearance === 'studio' ? 'StockAI · Studio' : 'StockAI · The stockroom'
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', appearance === 'studio' ? '#f8f9fb' : '#2c3e34')
+  }, [appearance])
 
   useEffect(() => {
     let active = true
@@ -123,7 +155,7 @@ export default function App() {
       try {
         const status = await api<Health>('/health')
         const stored = localStorage.getItem(STORAGE_KEY)
-        let current: { id: string; turns: Turn[] } | null = null
+        let current: Conversation | null = null
         if (stored) {
           try {
             current = await api(`/conversations/${stored}`)
@@ -217,6 +249,29 @@ export default function App() {
     }
   }
 
+  async function decideTransaction(id: string, decision: 'confirm' | 'cancel') {
+    if (!conversation || sendingRef.current || initializing) return
+    sendingRef.current = true
+    setDecisionPending(id)
+    setError('')
+    try {
+      const updated = await api<Conversation>(
+        `/conversations/${conversation}/transactions/${id}`,
+        { decision },
+      )
+      setTurns(updated.turns)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Could not save your decision. Please retry.',
+      )
+    } finally {
+      sendingRef.current = false
+      setDecisionPending(null)
+    }
+  }
+
   function submit(event: FormEvent) {
     event.preventDefault()
     void send(draft)
@@ -235,29 +290,40 @@ export default function App() {
   const empty = turns.length === 0 && !pending
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-appearance={appearance}>
       <aside className="sidebar">
         <a className="brand" href="/" aria-label="StockAI home">
           <span className="brand-mark">
-            <Store size={26} strokeWidth={1.5} />
+            {appearance === 'studio' ? (
+              <Orbit size={26} strokeWidth={1.5} />
+            ) : (
+              <Store size={26} strokeWidth={1.5} />
+            )}
           </span>
           <span className="brand-name">
             stockai<span className="brand-dot">.</span>
           </span>
         </a>
-        <p className="brand-caption">YOUR DIGITAL STOCKROOM</p>
+        <p className="brand-caption">
+          {appearance === 'studio'
+            ? 'THE INVENTORY WORKSPACE'
+            : 'YOUR DIGITAL STOCKROOM'}
+        </p>
         <div className="workspace">
           <span className="workspace-avatar">
             <Coffee size={17} />
           </span>
           <div>
-            The neighborhood shop<small>Sample inventory</small>
+            {appearance === 'studio'
+              ? 'Inventory workspace'
+              : 'The neighborhood shop'}
+            <small>Sample inventory</small>
           </div>
         </div>
         <button
           className="new-chat"
           onClick={() => void newChat()}
-          disabled={!!pending || initializing || !health}
+          disabled={!!pending || !!decisionPending || initializing || !health}
         >
           <Plus size={17} />
           New conversation
@@ -265,7 +331,7 @@ export default function App() {
         <div className="nav-label">BEHIND THE COUNTER</div>
         <div className="nav-item active">
           <MessageSquare size={17} />
-          The stockroom
+          {appearance === 'studio' ? 'Assistant' : 'The stockroom'}
           <span className="nav-dot" />
         </div>
         <div className="sidebar-section">
@@ -297,7 +363,7 @@ export default function App() {
               <p>
                 Explore with sample goods.
                 <br />
-                No real stock will be changed.
+                Confirm changes to sample stock.
               </p>
             </div>
           </div>
@@ -316,41 +382,75 @@ export default function App() {
       <main className="main">
         <header className="topbar">
           <div className="breadcrumb">
-            YOUR SHOP
+            <span className="breadcrumb-root">
+              {appearance === 'studio' ? 'WORKSPACE' : 'YOUR SHOP'}
+            </span>
             <ChevronRight size={14} />
-            <span>The stockroom</span>
+            <span>
+              {appearance === 'studio' ? 'Assistant' : 'The stockroom'}
+            </span>
+          </div>
+          <div className="ui-switch" role="group" aria-label="Interface style">
+            <button
+              type="button"
+              aria-pressed={appearance === 'stockroom'}
+              onClick={() => setAppearance('stockroom')}
+            >
+              <Store size={13} />
+              <span>Stockroom</span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={appearance === 'studio'}
+              onClick={() => setAppearance('studio')}
+            >
+              <Orbit size={13} />
+              <span>Studio</span>
+            </button>
           </div>
         </header>
         <div className="chat-heading">
           <div>
-            <h1>The stockroom</h1>
-            <p>Your everyday inventory, with a little extra know-how.</p>
+            <h1>
+              {appearance === 'studio'
+                ? 'Your inventory assistant'
+                : 'The stockroom'}
+            </h1>
+            <p>
+              {appearance === 'studio'
+                ? 'One conversation. A clearer view of your business.'
+                : 'Your everyday inventory, with a little extra know-how.'}
+            </p>
           </div>
         </div>
 
         <div ref={chatRef} className={`chat-scroll ${empty ? 'is-empty' : ''}`}>
           {empty && (
             <section className="welcome">
-              <div className="welcome-hero">
-                <div className="welcome-intro">
-                  <div className="eyebrow welcome-eyebrow">
-                    <span /> A LITTLE ORDER. A LOT LESS GUESSWORK.
+              {appearance === 'studio' ? (
+                <StudioWelcome />
+              ) : (
+                <div className="welcome-hero">
+                  <div className="welcome-intro">
+                    <div className="eyebrow welcome-eyebrow">
+                      <span /> A LITTLE ORDER. A LOT LESS GUESSWORK.
+                    </div>
+                    <h2>
+                      Good things
+                      <br />
+                      come <em>in stock.</em>
+                    </h2>
+                    <p className="welcome-copy">
+                      From the last bag of coffee to your next delivery. Let’s
+                      see what your shop needs.
+                    </p>
+                    <p className="welcome-signoff">
+                      Your shop. Your questions. We’ll check the shelves.
+                    </p>
                   </div>
-                  <h2>
-                    Good things
-                    <br />
-                    come <em>in stock.</em>
-                  </h2>
-                  <p className="welcome-copy">
-                    From the last bag of coffee to your next delivery. Let’s see
-                    what your shop needs.
-                  </p>
-                  <p className="welcome-signoff">
-                    Your shop. Your questions. We’ll check the shelves.
-                  </p>
+                  <StockroomIllustration />
                 </div>
-                <StockroomIllustration />
-              </div>
+              )}
               <div className="shelf-divider">
                 <span>WHERE SHALL WE START?</span>
                 <span>NO SPREADSHEET REQUIRED</span>
@@ -382,6 +482,17 @@ export default function App() {
                 Stock counts, shop rules, and restock plans. All in one
                 conversation.
               </p>
+              <button
+                className="try-transaction"
+                disabled={!ready || !!decisionPending}
+                onClick={() =>
+                  void send('Record a sale of 2 coffee bags for PEN 50 total.')
+                }
+              >
+                <ReceiptText size={14} />
+                Try recording a sale
+                <ArrowRight size={13} />
+              </button>
             </section>
           )}
 
@@ -403,6 +514,17 @@ export default function App() {
                       </ReactMarkdown>
                     </div>
                     <Activity turn={turn} />
+                    {(turn.transactions ?? []).map((transaction) => (
+                      <TransactionCard
+                        key={transaction.id}
+                        draft={transaction}
+                        busy={!!pending || !!decisionPending || initializing}
+                        deciding={decisionPending === transaction.id}
+                        onDecide={(id, decision) =>
+                          void decideTransaction(id, decision)
+                        }
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
@@ -473,7 +595,7 @@ export default function App() {
               rows={2}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={handleKey}
-              disabled={!ready || !!pending}
+              disabled={!ready || !!pending || !!decisionPending}
             />
             <div className="composer-bottom">
               <span>
@@ -486,20 +608,37 @@ export default function App() {
                 type="submit"
                 className="send-button"
                 aria-label="Send message"
-                disabled={!draft.trim() || !ready || !!pending}
+                disabled={
+                  !draft.trim() || !ready || !!pending || !!decisionPending
+                }
               >
                 <ArrowUp size={19} />
               </button>
             </div>
           </form>
           <div className="composer-caption">
-            <span>Sample goods. Real possibilities. Read-only demo.</span>
+            <span>
+              Sample goods. Real possibilities. Changes need your confirmation.
+            </span>
             <span>
               Enter to send
               <ArrowDown size={10} className="enter-arrow" />
               Shift + Enter for a new line
             </span>
           </div>
+          {appearance === 'studio' && (
+            <div className="studio-credit">
+              Orb adapted from{' '}
+              <a
+                href="https://rareui.com"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Rare UI
+                <ArrowUp size={9} />
+              </a>
+            </div>
+          )}
         </footer>
       </main>
     </div>

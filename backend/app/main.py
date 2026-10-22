@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections import defaultdict
 from contextlib import asynccontextmanager
+from typing import Literal
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException
@@ -12,7 +13,7 @@ from pydantic import BaseModel, Field, field_validator
 
 from .agents import AgentLimitError, Assistant, DeepSeek
 from .config import Settings
-from .store import Store
+from .store import DraftNotFound, Store, TransactionConflict
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +42,32 @@ class Source(BaseModel):
     content: str
 
 
+class TransactionDraft(BaseModel):
+    id: UUID
+    sku: str
+    product: str
+    unit: str
+    currency: str
+    kind: Literal["sale", "purchase"]
+    quantity: int
+    total: str
+    stock_before: int
+    stock_after: int
+    status: Literal["pending", "confirmed", "cancelled"]
+    transaction_id: int | None = None
+    recorded_at: str | None = None
+
+
+class TransactionDecision(BaseModel):
+    decision: Literal["confirm", "cancel"]
+
+
 class Turn(BaseModel):
     question: str
     answer: str
     steps: list[Step]
     sources: list[Source]
+    transactions: list[TransactionDraft] = Field(default_factory=list)
 
 
 class ChatResponse(Turn):
@@ -121,9 +143,21 @@ def create_app(settings: Settings | None = None, provider=None):
                 logger.error("Chat failed; internal details omitted to protect conversation data.")
                 raise HTTPException(500, "The assistant encountered an unexpected error. Please try again.") from None
             turn = {"question": request.message, "answer": result["answer"],
-                    "steps": result["steps"], "sources": result["sources"]}
+                    "steps": result["steps"], "sources": result["sources"],
+                    "transactions": result["transactions"]}
             store.save_turn(conversation_id, result["messages"], turn)
             return {"conversation_id": conversation_id, **turn}
+
+    @app.post("/api/conversations/{conversation_id}/transactions/{draft_id}",
+              response_model=ConversationResponse)
+    async def decide_transaction(conversation_id: UUID, draft_id: UUID, request: TransactionDecision):
+        async with locks[str(conversation_id)]:
+            try:
+                return store.decide_transaction(str(conversation_id), str(draft_id), request.decision)
+            except DraftNotFound as error:
+                raise HTTPException(404, str(error)) from None
+            except TransactionConflict as error:
+                raise HTTPException(409, str(error)) from None
 
     return app
 
