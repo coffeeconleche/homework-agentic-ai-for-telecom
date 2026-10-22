@@ -1,11 +1,28 @@
 export type Step = { agent: string; tool: string; status: string }
 export type Source = { source: string; title: string; content: string }
+export type TransactionDraft = {
+  id: string
+  sku: string
+  product: string
+  unit: string
+  currency: string
+  kind: 'sale' | 'purchase'
+  quantity: number
+  total: string
+  stock_before: number
+  stock_after: number
+  status: 'pending' | 'confirmed' | 'cancelled'
+  transaction_id: number | null
+  recorded_at: string | null
+}
 export type Turn = {
   question: string
   answer: string
   steps: Step[]
   sources: Source[]
+  transactions: TransactionDraft[]
 }
+export type Conversation = { id: string; turns: Turn[] }
 export type Health = {
   status: string
   llm_configured: boolean

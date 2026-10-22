@@ -1,4 +1,4 @@
-"""Small, validated, read-only tool surface. No arbitrary SQL or code execution."""
+"""Validated queries, calculations, and transaction drafts. No arbitrary code or SQL."""
 
 import inspect
 from dataclasses import dataclass
@@ -34,6 +34,14 @@ class Question(Arguments):
 
 class KnowledgeQuery(Arguments):
     query: str = Field(min_length=1, max_length=300)
+
+
+class TransactionDraftArguments(Arguments):
+    sku: str = Field(min_length=1, max_length=40, description="Exact SKU from query_inventory")
+    kind: Literal["sale", "purchase"]
+    quantity: int = Field(strict=True, ge=1, le=10000, description="Number of complete product units")
+    total: Decimal = Field(gt=0, le=1_000_000_000, decimal_places=2,
+                           description="Total price in the product's currency, not the unit price")
 
 
 def calculate(operation: str, a: Decimal, b: Decimal):

@@ -902,6 +902,144 @@ a {
   transform: rotate(45deg);
   margin-right: 4px;
 }
+.try-transaction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 14px auto 0;
+  padding: 7px 11px;
+  background: transparent;
+  border: 1px dashed #c6b99e;
+  border-radius: 3px;
+  color: #866746;
+  font-size: 10px;
+}
+.try-transaction:hover:enabled {
+  background: #eee5d2;
+}
+.try-transaction:disabled {
+  opacity: 0.5;
+}
+.transaction-card {
+  margin-top: 20px;
+  padding: 19px;
+  max-width: 480px;
+  border: 1px solid #cbbda1;
+  border-top: 3px solid #a87a4e;
+  border-radius: 3px;
+  background: #fffaf0;
+  box-shadow: 2px 3px 0 #d8d0bc35;
+  font-size: 12px;
+}
+.transaction-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  color: #846445;
+  font-size: 12px;
+}
+.transaction-header small {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.7px;
+}
+.transaction-product {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 20px 0 14px;
+}
+.transaction-product strong {
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 400;
+}
+.transaction-product > span {
+  color: #88846d;
+  font-family: var(--mono);
+  font-size: 9px;
+}
+.transaction-details {
+  padding: 0;
+  margin: 0;
+  border-top: 1px dashed #d7cbb4;
+}
+.transaction-details > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e9e0cd;
+}
+.transaction-details dt {
+  color: #817c66;
+  font-size: 11px;
+}
+.transaction-details dd {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  color: #4d5942;
+  text-align: right;
+}
+.transaction-card > p {
+  font-size: 10px;
+  line-height: 1.8;
+  color: #88816b;
+  margin: 14px 0 0;
+}
+.transaction-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+.transaction-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.confirm-transaction {
+  background: #334b3b;
+  border: 1px solid #334b3b;
+  color: #fff8e8;
+}
+.confirm-transaction:hover:enabled {
+  background: #456247;
+}
+.cancel-transaction {
+  background: transparent;
+  border: 1px solid #cabb9d;
+  color: #83694c;
+}
+.cancel-transaction:hover:enabled {
+  background: #eee5d2;
+}
+.transaction-actions button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.transaction-confirmed {
+  border-top-color: #7d926b;
+  background: #f3f4e9;
+}
+.transaction-confirmed .transaction-header {
+  color: #5e7654;
+}
+.transaction-cancelled {
+  border-top-color: #bbb39c;
+  background: #f1ede3;
+}
 .sr-only {
   position: absolute;
   width: 1px;

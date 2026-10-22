@@ -1,0 +1,688 @@
+/* Both views share one app instance, conversation, composer and transaction state. */
+.ui-switch {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid #d9d3c3;
+  border-radius: 9px;
+  background: #eee9dd;
+}
+.ui-switch button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #7c7b6c;
+  font-size: 10px;
+  line-height: 1;
+}
+.ui-switch button[aria-pressed='true'] {
+  background: #fffaf0;
+  color: #374836;
+  box-shadow: 0 1px 4px #46391b12;
+}
+.breadcrumb .breadcrumb-root {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+.topbar {
+  gap: 12px;
+}
+
+.app-shell[data-appearance='studio'] {
+  --paper: #111318;
+  --ink: #edf0f5;
+  --muted: #9198a6;
+  --line: #282d36;
+  --rust: #f3a27b;
+  --serif: 'DM Sans', sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+[data-appearance='studio'] .sidebar {
+  background: #181b22;
+  background-image: none;
+  border-right-color: #282d36;
+  color: #eef0f5;
+}
+[data-appearance='studio'] .brand {
+  gap: 8px;
+}
+[data-appearance='studio'] .brand-mark {
+  color: #f3a27b;
+}
+[data-appearance='studio'] .brand-name {
+  font-size: 29px;
+  font-weight: 700;
+  letter-spacing: -1.3px;
+}
+[data-appearance='studio'] .brand-dot {
+  color: #f3a27b;
+}
+[data-appearance='studio'] .brand-caption {
+  color: #8891a0;
+  font-size: 7px;
+  letter-spacing: 1.5px;
+}
+[data-appearance='studio'] .workspace {
+  border-color: #2c313b;
+  font-size: 11px;
+}
+[data-appearance='studio'] .workspace-avatar,
+[data-appearance='studio'] .profile-avatar {
+  background: #252a35;
+  border-color: #323846;
+  border-radius: 10px;
+  color: #d6b9a5;
+}
+[data-appearance='studio'] .workspace small,
+[data-appearance='studio'] .team-person small,
+[data-appearance='studio'] .profile small {
+  color: #929aa9;
+}
+[data-appearance='studio'] .new-chat {
+  background: #f2a077;
+  color: #241c18;
+  border-color: #f2a077;
+  border-radius: 10px;
+  box-shadow: 0 3px 12px #00000010;
+  font-weight: 600;
+}
+[data-appearance='studio'] .new-chat:hover:enabled {
+  background: #f7b28f;
+}
+[data-appearance='studio'] .nav-label {
+  color: #818b9d;
+  font-size: 7px;
+}
+[data-appearance='studio'] .nav-label span {
+  color: #a5adbb;
+}
+[data-appearance='studio'] .nav-item {
+  border: 1px solid #363c48;
+  border-radius: 10px;
+  background: #272c36;
+  color: #f0e6df;
+}
+[data-appearance='studio'] .nav-dot {
+  background: #f2a077;
+}
+[data-appearance='studio'] .agent-icon {
+  border-color: #3a414e;
+  border-radius: 9px;
+}
+[data-appearance='studio'] .inventory-icon {
+  background: #27332f;
+  color: #9dbaa9;
+}
+[data-appearance='studio'] .policy-icon {
+  background: #302b3b;
+  color: #b7a7d3;
+}
+[data-appearance='studio'] .demo-note {
+  background: #1d222b;
+  border: 1px solid #323945;
+  border-radius: 12px;
+  color: #d4d8e0;
+  font-size: 12px;
+}
+[data-appearance='studio'] .demo-note svg {
+  color: #a3aebf;
+}
+[data-appearance='studio'] .demo-note p {
+  color: #939eaf;
+}
+[data-appearance='studio'] .profile {
+  border-color: #2d3440;
+}
+[data-appearance='studio'] .main {
+  background: #111318;
+  background-image: none;
+}
+[data-appearance='studio'] .topbar {
+  border-color: #252a33;
+}
+[data-appearance='studio'] .breadcrumb {
+  color: #7e899b;
+}
+[data-appearance='studio'] .breadcrumb > span:last-child {
+  color: #c2c9d4;
+}
+[data-appearance='studio'] .breadcrumb svg {
+  color: #596579;
+}
+[data-appearance='studio'] .ui-switch {
+  background: #1b1f27;
+  border-color: #323946;
+  border-radius: 12px;
+}
+[data-appearance='studio'] .ui-switch button {
+  color: #97a2b3;
+  border-radius: 8px;
+}
+[data-appearance='studio'] .ui-switch button[aria-pressed='true'] {
+  background: #35303a;
+  color: #ffc0a0;
+  box-shadow: 0 1px 4px #00000025;
+}
+[data-appearance='studio'] .chat-heading h1 {
+  color: #ebedf3;
+  font-size: 18px;
+  font-weight: 550;
+  letter-spacing: -0.5px;
+}
+[data-appearance='studio'] .chat-heading p {
+  color: #7d899c;
+  font-size: 11px;
+}
+[data-appearance='studio'] .chat-scroll {
+  scrollbar-color: #353e4d transparent;
+}
+[data-appearance='studio'] .welcome {
+  max-width: 800px;
+  padding-top: 0;
+}
+.studio-hero {
+  text-align: center;
+  margin: 0 auto 33px;
+}
+.studio-orb-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 370px;
+  max-width: 100%;
+  height: 205px;
+  margin: 0 auto 13px;
+}
+.fluid-orb {
+  position: relative;
+  width: 176px;
+  height: 176px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(
+    circle at 40% 20%,
+    #fff7ee 12%,
+    #f7b899 50%,
+    #f47a44 100%
+  );
+  box-shadow: 0 16px 50px #e27e4b12;
+}
+.fluid-orb canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.studio-orbit {
+  position: absolute;
+  width: 255px;
+  height: 130px;
+  border: 1px solid #4e4550;
+  border-radius: 50%;
+  transform: rotate(-27deg);
+}
+.studio-orb-note {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid #373b46;
+  border-radius: 10px;
+  background: #20232c;
+  box-shadow: 0 7px 16px #0000001a;
+  color: #bbc3d0;
+  font-size: 9px;
+}
+.studio-orb-note svg {
+  color: #e5ab8a;
+}
+.note-inventory {
+  left: 0;
+  top: 38px;
+  transform: rotate(-5deg);
+}
+.note-knowledge {
+  right: 0;
+  bottom: 37px;
+  transform: rotate(5deg);
+}
+.studio-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #bc9f91;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 1.5px;
+}
+.studio-hero h2 {
+  margin: 17px 0 13px;
+  color: #f0f1f4;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 44px;
+  font-weight: 550;
+  letter-spacing: -1.8px;
+  line-height: 1.17;
+}
+.studio-hero h2 span {
+  color: #9a9eac;
+}
+.studio-hero > p {
+  margin: 0;
+  color: #8d96a7;
+  font-size: 12px;
+  line-height: 1.9;
+}
+[data-appearance='studio'] .shelf-divider {
+  border-color: #2a303b;
+  color: #8e99ab;
+}
+[data-appearance='studio'] .shelf-divider > span:last-child {
+  color: #67758b;
+}
+[data-appearance='studio'] .suggestions {
+  gap: 12px;
+}
+[data-appearance='studio'] .suggestion {
+  background: #1b1f27;
+  border-color: #303744;
+  border-radius: 15px;
+  box-shadow: 0 3px 8px #00000008;
+  padding: 16px;
+  min-height: 126px;
+}
+[data-appearance='studio'] .suggestion::before {
+  display: none;
+}
+[data-appearance='studio'] .suggestion:hover:enabled {
+  background: #252a35;
+  border-color: #7c6456;
+  transform: translateY(-3px);
+  box-shadow: 0 9px 20px #00000012;
+}
+[data-appearance='studio'] .suggestion-top {
+  color: #eeae88;
+  margin-bottom: 20px;
+}
+[data-appearance='studio'] .suggestion:nth-child(2) .suggestion-top {
+  color: #b7a7d3;
+}
+[data-appearance='studio'] .suggestion:nth-child(3) .suggestion-top {
+  color: #9bb5b1;
+}
+[data-appearance='studio'] .suggestion-number {
+  color: #69768a;
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 10px;
+}
+[data-appearance='studio'] .suggestion .eyebrow {
+  color: #8390a4;
+  font-size: 6px;
+  letter-spacing: 0.7px;
+}
+[data-appearance='studio'] .suggestion strong {
+  color: #dce0e8;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 450;
+  letter-spacing: -0.2px;
+}
+[data-appearance='studio'] .suggestion strong svg {
+  color: #7e8da4;
+}
+[data-appearance='studio'] .welcome-footnote {
+  color: #8995a8;
+}
+[data-appearance='studio'] .try-transaction {
+  border-color: #45505e;
+  border-radius: 8px;
+  color: #c7ad9e;
+}
+[data-appearance='studio'] .try-transaction:hover:enabled {
+  background: #242a34;
+}
+[data-appearance='studio'] .user-message {
+  background: #302924;
+  border-color: #4b3a2f;
+  color: #e2c8b7;
+  border-radius: 15px 15px 4px 15px;
+}
+[data-appearance='studio'] .assistant-avatar {
+  background: #2a2f3b;
+  border-color: #3a4252;
+  color: #efb391;
+  border-radius: 10px;
+}
+[data-appearance='studio'] .message-label {
+  color: #e0e4ed;
+  font-size: 13px;
+  font-weight: 550;
+}
+[data-appearance='studio'] .message-label > span {
+  color: #7b8ba4;
+}
+[data-appearance='studio'] .markdown {
+  color: #bdc5d2;
+}
+[data-appearance='studio'] .markdown h1,
+[data-appearance='studio'] .markdown h2,
+[data-appearance='studio'] .markdown h3 {
+  color: #e1e7f0;
+  font-size: 19px;
+  font-weight: 500;
+}
+[data-appearance='studio'] .markdown th,
+[data-appearance='studio'] .markdown td {
+  border-color: #364050;
+}
+[data-appearance='studio'] .markdown th {
+  background: #212732;
+}
+[data-appearance='studio'] .markdown pre,
+[data-appearance='studio'] .markdown code {
+  background: #242c3a;
+  color: #d2d9e5;
+  border-radius: 6px;
+}
+[data-appearance='studio'] .activity {
+  color: #91a0b7;
+}
+[data-appearance='studio'] .activity-content {
+  background: #1a202a;
+  background-image: none;
+  border-color: #333d4e;
+  border-radius: 12px;
+}
+[data-appearance='studio'] .activity-step {
+  color: #a1b6ad;
+}
+[data-appearance='studio'] .activity-step small {
+  color: #92a0b5;
+}
+[data-appearance='studio'] .sources {
+  border-color: #3d4656;
+}
+[data-appearance='studio'] .sources .eyebrow {
+  color: #a5a2bb;
+}
+[data-appearance='studio'] .source > summary {
+  color: #c8a992;
+}
+[data-appearance='studio'] .source > summary > span {
+  color: #8e9db4;
+}
+[data-appearance='studio'] .source > p {
+  color: #a5b3c5;
+}
+[data-appearance='studio'] .thinking {
+  color: #a2adc0;
+}
+[data-appearance='studio'] .thinking-dots i {
+  background: #ecac83;
+}
+[data-appearance='studio'] .thinking-note {
+  color: #78869c;
+}
+[data-appearance='studio'] .error-message {
+  background: #342a24;
+  border-color: #7b5940;
+  color: #e2b58e;
+  border-radius: 12px;
+}
+[data-appearance='studio'] .error-message button {
+  background: #4c3729;
+  border-color: #876548;
+  color: #f1ccaa;
+}
+[data-appearance='studio'] .composer-area {
+  max-width: 884px;
+}
+[data-appearance='studio'] .composer {
+  background: #1b2029;
+  border: 1px solid #3b4353;
+  border-radius: 17px;
+  box-shadow: 0 8px 35px #00000015;
+}
+[data-appearance='studio'] .composer:focus-within {
+  border-color: #a9846e;
+  box-shadow: 0 0 0 3px #bb8f6b0b;
+}
+[data-appearance='studio'] .composer textarea {
+  color: #e4e7ed;
+}
+[data-appearance='studio'] .composer textarea::placeholder {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: #7e8ba1;
+}
+[data-appearance='studio'] .composer-bottom > span {
+  color: #8795ab;
+}
+[data-appearance='studio'] .composer-bottom > span > svg {
+  color: #c2a08b;
+}
+[data-appearance='studio'] .composer-divider {
+  background: #3a465a;
+}
+[data-appearance='studio'] .send-button {
+  background: #eda278;
+  border-color: #eda278;
+  border-radius: 10px;
+  color: #2b2420;
+}
+[data-appearance='studio'] .send-button:hover:enabled {
+  background: #ffc49c;
+}
+[data-appearance='studio'] .send-button:disabled {
+  background: #303746;
+  border-color: #3b4455;
+  color: #718099;
+}
+[data-appearance='studio'] .composer-caption {
+  color: #7d8ba0;
+}
+.studio-credit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding-top: 10px;
+  color: #8390a5;
+  font-size: 8px;
+}
+.studio-credit a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  text-decoration-color: #6b7282;
+  text-underline-offset: 2px;
+  color: #c1b7b0;
+}
+.studio-credit a svg {
+  transform: rotate(45deg);
+}
+[data-appearance='studio'] .transaction-card {
+  background: #1e2530;
+  border-color: #3b4657;
+  border-top-color: #d99d77;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px #00000010;
+}
+[data-appearance='studio'] .transaction-header {
+  color: #d9b6a1;
+}
+[data-appearance='studio'] .transaction-product > span {
+  color: #9aa9be;
+}
+[data-appearance='studio'] .transaction-details {
+  border-color: #495268;
+}
+[data-appearance='studio'] .transaction-details > div {
+  border-color: #364154;
+}
+[data-appearance='studio'] .transaction-details dt {
+  color: #a2b0c4;
+}
+[data-appearance='studio'] .transaction-details dd {
+  color: #e0e6ef;
+}
+[data-appearance='studio'] .transaction-card > p {
+  color: #a2aec0;
+}
+[data-appearance='studio'] .transaction-actions button {
+  border-radius: 8px;
+}
+[data-appearance='studio'] .confirm-transaction {
+  color: #261c17;
+  background: #eda278;
+  border-color: #eda278;
+}
+[data-appearance='studio'] .confirm-transaction:hover:enabled {
+  background: #f9bc93;
+}
+[data-appearance='studio'] .cancel-transaction {
+  color: #b9c4d4;
+  border-color: #516079;
+}
+[data-appearance='studio'] .cancel-transaction:hover:enabled {
+  background: #2a3546;
+}
+[data-appearance='studio'] .transaction-confirmed {
+  border-top-color: #8cba9c;
+}
+[data-appearance='studio'] .transaction-confirmed .transaction-header {
+  color: #a2ceb0;
+}
+[data-appearance='studio'] .transaction-cancelled {
+  border-top-color: #8996ac;
+}
+
+@media (max-width: 1100px) {
+  .studio-hero h2 {
+    font-size: 39px;
+  }
+  [data-appearance='studio'] .suggestion {
+    padding: 14px 12px;
+  }
+  [data-appearance='studio'] .suggestion strong {
+    font-size: 12px;
+  }
+}
+@media (max-width: 600px) {
+  .breadcrumb .breadcrumb-root,
+  .breadcrumb > svg {
+    display: none;
+  }
+  .ui-switch {
+    padding: 3px;
+    gap: 2px;
+  }
+  .ui-switch button {
+    font-size: 9px;
+    padding: 7px;
+    gap: 4px;
+  }
+  [data-appearance='studio'] .chat-heading h1 {
+    font-size: 17px;
+  }
+  [data-appearance='studio'] .chat-heading p {
+    font-size: 9px;
+    max-width: 100%;
+  }
+  .studio-orb-stage {
+    width: 270px;
+    height: 148px;
+    margin-bottom: 9px;
+  }
+  .fluid-orb {
+    width: 120px;
+    height: 120px;
+  }
+  .studio-orbit {
+    width: 200px;
+    height: 100px;
+  }
+  .studio-orb-note {
+    font-size: 8px;
+    padding: 6px 8px;
+    gap: 5px;
+  }
+  .note-inventory {
+    top: 26px;
+  }
+  .note-knowledge {
+    bottom: 25px;
+  }
+  .studio-eyebrow {
+    font-size: 6px;
+    letter-spacing: 1px;
+  }
+  .studio-hero h2 {
+    font-size: 29px;
+    letter-spacing: -1.2px;
+    margin-top: 12px;
+  }
+  .studio-hero > p {
+    font-size: 10px;
+  }
+  .studio-hero {
+    margin-bottom: 24px;
+  }
+  [data-appearance='studio'] .suggestion {
+    min-height: 0;
+    padding: 14px;
+  }
+  [data-appearance='studio'] .suggestion-top {
+    margin-bottom: 0;
+  }
+  [data-appearance='studio'] .suggestion .eyebrow {
+    font-size: 6px;
+  }
+  [data-appearance='studio'] .suggestion strong {
+    font-size: 12px;
+  }
+  [data-appearance='studio'] .composer textarea::placeholder {
+    font-size: 12px;
+  }
+  .studio-credit {
+    padding-top: 8px;
+    font-size: 7px;
+  }
+}
+@media (max-height: 760px) and (min-width: 601px) {
+  .studio-orb-stage {
+    height: 158px;
+  }
+  .fluid-orb {
+    width: 140px;
+    height: 140px;
+  }
+  .studio-orbit {
+    width: 220px;
+    height: 105px;
+  }
+  .studio-hero {
+    margin-bottom: 24px;
+  }
+  .studio-hero h2 {
+    font-size: 36px;
+    margin: 12px 0;
+  }
+  [data-appearance='studio'] .suggestion {
+    min-height: 112px;
+  }
+  [data-appearance='studio'] .suggestion-top {
+    margin-bottom: 13px;
+  }
+}
